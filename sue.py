@@ -1,16 +1,12 @@
-from itertools import combinations, starmap
+from itertools import combinations, starmap, product, izip
+from collections import defaultdict
 
-def f():
-	msg = "234c02ecbbfbafa3ed18510abd11fa724fcda2018a1a8342cf064bbde548b12b07df44ba7191d9606ef4081ffde5ad46a5069d9f7f543bedb9c861bf29c7e205132eda9382b0bc2c5c4b45f919cf3a9f1cb74151f6d551f4480c82b2cb24cc5b028aa76eb7b4ab24171ab3cdadb8356f"	
-	decoded = msg.decode('hex')
-	return decoded
-	
 def xor_str(c1,c2):
 	return " ".join([str(ord(a)^ord(b)) for a,b in zip(c1,c2)])
 
 def xor(c1,c2):
 	return [chr(ord(a)^ord(b)) for a,b in zip(c1,c2)]
-	
+
 
 cyp = ["315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146fb778cdf2d3aff021dfff5b403b510d0d0455468aeb98622b137dae857553ccd8883a7bc37520e06e515d22c954eba5025b8cc57ee59418ce7dc6bc41556bdb36bbca3e8774301fbcaa3b83b220809560987815f65286764703de0f3d524400a19b159610b11ef3e"
 ,"234c02ecbbfbafa3ed18510abd11fa724fcda2018a1a8342cf064bbde548b12b07df44ba7191d9606ef4081ffde5ad46a5069d9f7f543bedb9c861bf29c7e205132eda9382b0bc2c5c4b45f919cf3a9f1cb74151f6d551f4480c82b2cb24cc5b028aa76eb7b4ab24171ab3cdadb8356f"
@@ -24,6 +20,19 @@ cyp = ["315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146fb
 ,"466d06ece998b7a2fb1d464fed2ced7641ddaa3cc31c9941cf110abbf409ed39598005b3399ccfafb61d0315fca0a314be138a9f32503bedac8067f03adbf3575c3b8edc9ba7f537530541ab0f9f3cd04ff50d66f1d559ba520e89a2cb2a83"
 ,"32510ba9babebbbefd001547a810e67149caee11d945cd7fc81a05e9f85aac650e9052ba6a8cd8257bf14d13e6f0a803b54fde9e77472dbff89d71b57bddef121336cb85ccb8f3315f4b52e301d16e9f52f904"]
 dcyp=[x.decode("hex") for x in cyp]
-xors = list(starmap(xor, combinations(dcyp,2)))
+xors = starmap(xor, combinations(dcyp,2))
+indexes = combinations(range(len(dcyp)),2)
+xors = dict(izip(indexes, xors))
 
 
+is_alnum = lambda x: x==32 or 64<x<91 or 96<x<123
+al = defaultdict(lambda :[])
+al.update({chr(i):[] for i in range(128)})
+[al[chr(i^j)].append((chr(i),chr(j))) for i,j in product(range(128),range(128)) if is_alnum(i) and is_alnum(j)]
+
+
+useful = dict()
+for k,xor in xors.iteritems():
+	first = dcyp[k[0]]
+	second = dcyp[k[1]]
+	useful[k]=[(x, first[i], second[i]) for i,x in enumerate(xor) if len(al[x])==2]
