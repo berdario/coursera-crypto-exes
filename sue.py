@@ -1,4 +1,4 @@
-from itertools import combinations, starmap, product, izip
+from itertools import combinations, starmap, product, izip, permutations, groupby
 from collections import defaultdict
 
 def xor_str(c1,c2):
@@ -20,8 +20,9 @@ cyp = ["315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146fb
 ,"466d06ece998b7a2fb1d464fed2ced7641ddaa3cc31c9941cf110abbf409ed39598005b3399ccfafb61d0315fca0a314be138a9f32503bedac8067f03adbf3575c3b8edc9ba7f537530541ab0f9f3cd04ff50d66f1d559ba520e89a2cb2a83"
 ,"32510ba9babebbbefd001547a810e67149caee11d945cd7fc81a05e9f85aac650e9052ba6a8cd8257bf14d13e6f0a803b54fde9e77472dbff89d71b57bddef121336cb85ccb8f3315f4b52e301d16e9f52f904"]
 dcyp=[x.decode("hex") for x in cyp]
+l =  len(dcyp)
 xors = starmap(xor, combinations(dcyp,2))
-indexes = combinations(range(len(dcyp)),2)
+indexes = combinations(range(l),2)
 xors = dict(izip(indexes, xors))
 
 
@@ -31,8 +32,33 @@ al.update({chr(i):[] for i in range(128)})
 [al[chr(i^j)].append((chr(i),chr(j))) for i,j in product(range(128),range(128)) if is_alnum(i) and is_alnum(j)]
 
 
-useful = dict()
-for k,xor in xors.iteritems():
+candidates = dict()
+for k,this_xor in xors.iteritems():
 	first = dcyp[k[0]]
 	second = dcyp[k[1]]
-	useful[k]=[(x, first[i], second[i]) for i,x in enumerate(xor) if len(al[x])==2]
+	#candidates[k]=[(x, first[i], second[i]) for i,x in enumerate(this_xor) if len(al[x])==2]
+	candidates[k]=[i for i,x in enumerate(this_xor) if len(al[x])==2]
+
+intersection = lambda x,y: [val for val in x if val in y]
+get_candidate = lambda key: candidates.get(tuple(sorted(key)))
+
+spaces = dict()
+hid_key = dict()
+for n,keys in groupby(permutations(range(l),2), lambda x:x[0]):
+	spaces[n] = reduce(intersection, map(get_candidate, keys))
+	cmsg = list(dcyp[n])
+	hid_key.update({s:ord(cmsg[s])^ord(" ") for s in spaces[n]})
+	#Fixme: ord(" ") is hardcoded
+
+def decrypt(msg):
+	keys = hid_key
+	codes = map(ord, list(msg))
+	"".join(map(chr, [c^keys.get(i,0) for i,c in enumerate(codes)]))
+
+	d = []
+	for i,c in enumerate(codes):
+		try:
+			d.append(c^keys[i])
+		except KeyError:
+			d.append(63)
+	return "".join(map(chr,d))
