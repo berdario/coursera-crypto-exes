@@ -39,6 +39,10 @@ for k,this_xor in xors.iteritems():
 	#candidates[k]=[(x, first[i], second[i]) for i,x in enumerate(this_xor) if len(al[x])==2]
 	candidates[k]=[i for i,x in enumerate(this_xor) if len(al[x])==2]
 
+# Check that candidates are only those that contain the space character
+all_candidates = [k for k,v in sue.al.iteritems() if len(v)==2]
+assert not [sue.al[k] for k in all_candidates if all([" " not in t for t in sue.al[k]])]
+
 intersection = lambda x,y: [val for val in x if val in y]
 get_candidate = lambda key: candidates.get(tuple(sorted(key)))
 
