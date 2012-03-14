@@ -76,21 +76,21 @@ def update_keys(cmsg, idx, char):
 	if all(is_alnum(hid_key[idx]^ord(m[idx])) for m in dcyp):
 		print "Success!"
 	else:
-		print "Failure :("
+		print "Failure (maybe)"
 	print_messages(idx)
+
+def reset_key(idx):
+	del hid_key[idx]
 	
 def print_messages(idx=None):
 	if not idx:
 		s = slice(None)
+	elif idx<5:
+		s = slice(idx+5)
 	else:
 		s = slice(idx-5, idx+5)
+
 	print "\n".join("%2d %s" % (i, decrypt(c)[s]) for i,c in enumerate(dcyp))
 
-recovered_chars = [(0, 42, "o"),
-(0, 44, "p"),
-(0, 46, "t")
-]
-
-# Bulk apply the recovered chars
-list(starmap(_update_keys, recovered_chars))
+final_key = {0: 102, 1: 57, 2: 110, 3: 137, 4: 201, 5: 219, 6: 216, 7: 204, 8: 152, 9: 116, 10: 53, 11: 42, 12: 205, 13: 99, 14: 149, 15: 16, 16: 46, 17: 175, 18: 206, 19: 120, 20: 170, 21: 127, 22: 237, 23: 40, 24: 160, 25: 127, 26: 107, 27: 201, 28: 141, 29: 41, 30: 197, 31: 11, 32: 105, 33: 176, 34: 51, 35: 154, 36: 25, 37: 248, 38: 170, 39: 64, 40: 26, 41: 156, 42: 109, 43: 112, 44: 143, 45: 128, 46: 192, 47: 102, 48: 199, 49: 99, 50: 254, 51: 240, 52: 18, 53: 49, 54: 72, 55: 205, 56: 216, 57: 232, 58: 2, 59: 208, 60: 91, 61: 169, 62: 135, 63: 119, 64: 51, 65: 93, 66: 174, 67: 252, 68: 236, 69: 213, 70: 156, 71: 67, 72: 58, 73: 107, 74: 38, 75: 139, 76: 96, 77: 191, 78: 78, 79: 240, 80: 60, 81: 154, 82: 97}
 
