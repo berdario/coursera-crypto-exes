@@ -26,10 +26,12 @@ indexes = combinations(range(l),2)
 xors = dict(izip(indexes, xors))
 
 
-is_alnum = lambda x: x==32 or 64<x<91 or 96<x<123
+is_alnum = lambda x: x==32 or 64<x<91 or 96<x<123 or 47<x<58
+is_al = lambda x: x==32 or 64<x<91 or 96<x<123
 al = defaultdict(lambda :[])
 al.update({chr(i):[] for i in range(128)})
-[al[chr(i^j)].append((chr(i),chr(j))) for i,j in product(range(128),range(128)) if is_alnum(i) and is_alnum(j)]
+[al[chr(i^j)].append((chr(i),chr(j))) for i,j in product(range(128),range(128)) if is_al(i) and is_al(j)]
+# to bootstrap I ignore the numbers
 
 
 candidates = dict()
@@ -66,5 +68,29 @@ def decrypt(msg):
 			d.append(63) # 63 == "?"
 	return "".join(map(chr,d))
 
-def update_keys(idx, cmsg, char):
-	hid_key[idx]=ord(cmsg[idx])^ord(char)
+def _update_keys(cmsg, idx, char):
+	hid_key[idx]=ord(dcyp[cmsg][idx])^ord(char)
+
+def update_keys(cmsg, idx, char):
+	_update_keys(cmsg, idx, char)
+	if all(is_alnum(hid_key[idx]^ord(m[idx])) for m in dcyp):
+		print "Success!"
+	else:
+		print "Failure :("
+	print_messages(idx)
+	
+def print_messages(idx=None):
+	if not idx:
+		s = slice(None)
+	else:
+		s = slice(idx-5, idx+5)
+	print "\n".join("%2d %s" % (i, decrypt(c)[s]) for i,c in enumerate(dcyp))
+
+recovered_chars = [(0, 42, "o"),
+(0, 44, "p"),
+(0, 46, "t")
+]
+
+# Bulk apply the recovered chars
+list(starmap(_update_keys, recovered_chars))
+
