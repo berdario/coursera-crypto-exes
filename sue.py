@@ -40,8 +40,8 @@ for k,this_xor in xors.iteritems():
 	candidates[k]=[i for i,x in enumerate(this_xor) if len(al[x])==2]
 
 # Check that candidates are only those that contain the space character
-all_candidates = [k for k,v in sue.al.iteritems() if len(v)==2]
-assert not [sue.al[k] for k in all_candidates if all([" " not in t for t in sue.al[k]])]
+all_candidates = [k for k,v in al.iteritems() if len(v)==2]
+assert not [al[k] for k in all_candidates if all([" " not in t for t in al[k]])]
 
 intersection = lambda x,y: [val for val in x if val in y]
 get_candidate = lambda key: candidates.get(tuple(sorted(key)))
@@ -52,7 +52,6 @@ for n,keys in groupby(permutations(range(l),2), lambda x:x[0]):
 	spaces[n] = reduce(intersection, map(get_candidate, keys))
 	cmsg = list(dcyp[n])
 	hid_key.update({s:ord(cmsg[s])^ord(" ") for s in spaces[n]})
-	#Fixme: ord(" ") is hardcoded
 
 def decrypt(msg):
 	keys = hid_key
@@ -64,5 +63,8 @@ def decrypt(msg):
 		try:
 			d.append(c^keys[i])
 		except KeyError:
-			d.append(63)
+			d.append(63) # 63 == "?"
 	return "".join(map(chr,d))
+
+def update_keys(idx, cmsg, char):
+	hid_key[idx]=ord(cmsg[idx])^ord(char)
