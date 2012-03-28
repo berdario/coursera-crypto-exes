@@ -25,7 +25,7 @@ def get_proc_block():
 		yield array("c", (next(blocks)))
 
 def results():
-	d = dict()
+	d = set()
 	t = time()
 	iterator = get_proc_block()
 	for i in range(2**25):
@@ -35,9 +35,10 @@ def results():
 		block = next(iterator)
 		key = get_lsbs_str(sha256(block).digest())
 		if key in d:
-			print d[key]
+			print i
 			print block
-		d[key] = block
+			print key
+		d.add(key)
 	
 	#res = filter(lambda t:len(t[1])>1, d.iteritems())
 	#return res
