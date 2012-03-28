@@ -5,12 +5,13 @@ from collections import defaultdict
 from time import time
 from string import printable
 from itertools import product, chain, count
+from array import array
 
 def get_lsbs_str(mystr):
 	chrlist = list(mystr)
 	result1 = [chr(ord(chrlist[-7])&(3))]
 	result2 = chrlist[-6:]
-	return "".join(result1 + result2)
+	return array("c", result1 + result2)
 
 alphabet = printable[:-5]
 def get_rand_block():
@@ -21,7 +22,7 @@ def get_rand_block():
 def get_proc_block():
 	blocks = chain(*[product(*([alphabet]*i)) for i in range(60)])
 	while True:
-		yield "".join(next(blocks))
+		yield array("c", (next(blocks)))
 
 def results():
 	d = dict()
