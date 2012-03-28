@@ -11,7 +11,6 @@ from pymongo import Connection
 from bloomfilter import bloomify
 
 baredb = Connection().hashes.collection
-db = bloomify(baredb, "hash", M=70000000)
 
 def get_lsbs_str(mystr):
 	chrlist = list(mystr)
@@ -31,6 +30,7 @@ def get_proc_block():
 		yield "".join(next(blocks))
 
 def results():
+	db = bloomify(baredb, "hash", M=70000000)
 	t = time()
 	elements = {}
 	iterator = get_proc_block()
@@ -61,5 +61,5 @@ def results():
 # 	return res
 
 if __name__ == "__main__":
-	db.drop()
+	baredb.drop()
 	results()
