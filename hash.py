@@ -11,7 +11,7 @@ from pymongo import Connection
 from bloomfilter import bloomify
 
 baredb = Connection().hashes.collection
-db = bloomify(baredb, "hash")
+db = bloomify(baredb, "hash", M=70000000)
 
 def get_lsbs_str(mystr):
 	chrlist = list(mystr)
@@ -35,12 +35,12 @@ def results():
 	elements = {}
 	iterator = get_proc_block()
 	for i in xrange(2**33):
-		if not (i % 100000):
+		if not (i % 100000) and i>1:
 			print i, time()-t
 			t = time()
-		if not (i % 1000000) and i>1:
 			db.insert(elements.values())
 			elements = {}
+
 		block = next(iterator)
 		key = get_lsbs_str(sha256(block).digest())
 		el = elements.get(key)
