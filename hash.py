@@ -27,7 +27,7 @@ def get_proc_block():
 def results():
 	d = dict()
 	t = time()
-	iterator = get_rand_block()
+	iterator = get_proc_block()
 	for i in range(2**25):
 		if not (i % 100000):
 			print i, time()-t
@@ -53,4 +53,4 @@ def results():
 # 	return res
 
 if __name__ == "__main__": 
-	pass
+	results()
