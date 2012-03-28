@@ -8,8 +8,10 @@ from itertools import product, chain, count
 from array import array
 
 from pymongo import Connection
+from bloomfilter import bloomify
 
-db = Connection().hashes.collection
+baredb = Connection().hashes.collection
+db = bloomify(baredb, "hash")
 
 def get_lsbs_str(mystr):
 	chrlist = list(mystr)
@@ -38,7 +40,7 @@ def results():
 			t = time()
 		if not (i % 1000000) and i>1:
 			db.insert(elements.values())
-			elements = []
+			elements = {}
 		block = next(iterator)
 		key = get_lsbs_str(sha256(block).digest())
 		el = elements.get(key)
