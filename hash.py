@@ -37,7 +37,7 @@ def get_proc_block():
 	while True:
 		yield "".join(next(blocks))
 
-def results(array, queue, offset, step, slice_size=100000):
+def results(array, ctrlq, resultq, offset, step, slice_size=100000):
 	db = wrapping_bloomify(baredb, "hash", array)
 	t = time()
 	elements = {}
@@ -45,15 +45,16 @@ def results(array, queue, offset, step, slice_size=100000):
 	
 	for s in slices:
 		for i, value in s:
-			key = get_lsbs_str(sha256(value).digest(), 50).encode("hex")
+			key = get_lsbs_str(sha256(value).digest(), 41).encode("hex")
 			el = elements.get(key)
 			el = el or db.find_one({"hash": key})
 			if el:
-				queue.put([key, value, el['value']])
+				resultq.put([key, value, el['value']])
 				return
 	
 			elements[key]={"hash": key, "value": value}
 
+		ctrlq.put("next process")
 		print "from", 1+i-slice_size, "to", i, time()-t
 		t = time()
 		print "miss rate:", db._bf.get_miss_rate()
@@ -63,11 +64,12 @@ def results(array, queue, offset, step, slice_size=100000):
 if __name__ == "__main__":
 	baredb.drop()
 	array = Array('c', 87500000)
-	queue = Queue()
+	control_queue, result_queue = Queue(), Queue()
 	procs = cpu_count()
-	pool = [Process(target=results, args=(array, queue, i, procs)) for i in range(procs)]
+	pool = [Process(target=results, args=(array, control_queue, result_queue, i, procs)) for i in range(procs)]
 	for p in pool:
 		p.daemon = True
 		p.start()
-	print queue.get()
+		control_queue.get()
+	print result_queue.get()
 
