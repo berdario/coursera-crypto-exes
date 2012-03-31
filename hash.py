@@ -6,12 +6,20 @@ from time import time
 from string import printable
 from itertools import product, chain, count
 from array import array
+from math import log
 
-def get_lsbs_str(mystr):
-	chrlist = list(mystr)
-	result1 = [chr(ord(chrlist[-7])&(3))]
-	result2 = chrlist[-6:]
-	return array("c", result1 + result2)
+log2 = lambda x: log(x)/log(2)
+bits = lambda x: int(log2(x)+1)
+
+def get_lsbs_str(mystr, l=50):
+	chrlist, result = list(mystr), []
+	chars = l / 8
+	rem = l % 8
+	if rem:
+		result += [chr(ord(chrlist[-(chars + 1)]) & bits(rem))]
+	if chars:
+		result += chrlist[-chars:]
+	return "".join(result)
 
 alphabet = printable[:-5]
 def get_rand_block():
@@ -22,21 +30,22 @@ def get_rand_block():
 def get_proc_block():
 	blocks = chain(*[product(*([alphabet]*i)) for i in range(60)])
 	while True:
-		yield array("c", (next(blocks)))
+		yield "".join(next(blocks))
 
 def results():
 	d = dict()
 	t = time()
 	iterator = get_proc_block()
-	for i in range(2**25):
+	for i in xrange(2**25):
 		if not (i % 100000):
 			print i, time()-t
 			t = time()
 		block = next(iterator)
-		key = get_lsbs_str(sha256(block).digest())
+		key = get_lsbs_str(sha256(block).digest(), 50)
 		if key in d:
 			print d[key]
 			print block
+			break
 		d[key] = block
 	
 	#res = filter(lambda t:len(t[1])>1, d.iteritems())
