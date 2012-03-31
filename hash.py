@@ -12,13 +12,13 @@ log2 = lambda x: log(x)/log(2)
 bits = lambda x: int(log2(x)+1)
 
 def get_lsbs_str(mystr, l=50):
-	chrlist, result = list(mystr), []
+	result = []
 	chars = l / 8
 	rem = l % 8
 	if rem:
-		result += [chr(ord(chrlist[-(chars + 1)]) & bits(rem))]
+		result += [chr(ord(mystr[-(chars + 1)]) & bits(rem))]
 	if chars:
-		result += chrlist[-chars:]
+		result += mystr[-chars:]
 	return "".join(result)
 
 alphabet = printable[:-5]
@@ -33,7 +33,7 @@ def get_proc_block():
 		yield "".join(next(blocks))
 
 def results():
-	d = set()
+	d = {}
 	t = time()
 	iterator = get_proc_block()
 	for i in xrange(2**25):
@@ -45,13 +45,8 @@ def results():
 		if key in d:
 			print i
 			print block
-<<<<<<< local
 			break
 		d[key] = block
-=======
-			print key
-		d.add(key)
->>>>>>> other
 	
 	#res = filter(lambda t:len(t[1])>1, d.iteritems())
 	#return res
