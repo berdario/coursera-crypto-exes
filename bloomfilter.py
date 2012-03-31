@@ -109,9 +109,21 @@ def bloomify(coll_obj, coll_key, M=None):
         if not(result): #false-positive occured (a miss)
             bf.inc_misses()
         return result
-    #4. re-assign find_one 
+    #4. construct new insert function
+    orig_insert = coll_obj.insert
+    def new_insert(doc_or_docs, *args, **kwargs):
+    	if isinstance(doc_or_docs, dict):
+    		try:
+    			bf.add_key(doc_or_docs[coll_key])
+    		except KeyError:
+    			pass
+    	else:
+    		bf.add_keys((doc[coll_key] for doc in doc_or_docs if coll_key in doc))
+    	orig_insert(doc_or_docs, *args, **kwargs)
+    #5. re-assign find_one and insert
     coll_obj._bf = bf
     coll_obj.find_one = new_find_one
+    coll_obj.insert = new_insert
     return coll_obj
 
 

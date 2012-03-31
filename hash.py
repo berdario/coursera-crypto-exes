@@ -38,7 +38,7 @@ def get_proc_block():
 		yield "".join(next(blocks))
 
 def results():
-	db = bloomify(baredb, "hash", M=70000000)
+	db = bloomify(baredb, "hash", M=700000000)
 	t = time()
 	elements = {}
 	iterator = get_proc_block()
@@ -47,11 +47,12 @@ def results():
 		if not (i % 100000) and i>1:
 			print i, time()-t
 			t = time()
+			print "miss rate: ", db._bf.get_miss_rate()
 			db.insert(elements.values())
 			elements = {}
 
 		block = next(iterator)
-		key = get_lsbs_str(sha256(block).digest(), 50)
+		key = get_lsbs_str(sha256(block).digest(), 50).encode("hex")
 		el = elements.get(key)
 		el = el or db.find_one({"hash": key})
 		if el:
