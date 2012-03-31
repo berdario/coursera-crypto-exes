@@ -4,12 +4,12 @@ from hashlib import sha256
 from collections import defaultdict
 from time import time
 from string import printable
-from itertools import product, chain, count
-from array import array
+from itertools import product, chain, count, islice, groupby
+from multiprocessing import Process, Array, Queue, cpu_count
 from math import log
 
 from pymongo import Connection
-from bloomfilter import bloomify
+from bloomfilter import wrapping_bloomify
 
 log2 = lambda x: log(x)/log(2)
 bits = lambda x: int(log2(x)+1)
@@ -37,31 +37,37 @@ def get_proc_block():
 	while True:
 		yield "".join(next(blocks))
 
-def results():
-	db = bloomify(baredb, "hash", M=700000000)
+def results(array, queue, offset, step, slice_size=100000):
+	db = wrapping_bloomify(baredb, "hash", array)
 	t = time()
 	elements = {}
-	iterator = get_proc_block()
+	slices = (v for k,v in islice(groupby(enumerate(get_proc_block()), lambda t: t[0]/slice_size), offset, None, step))
+	
+	for s in slices:
+		for i, value in s:
+			key = get_lsbs_str(sha256(value).digest(), 50).encode("hex")
+			el = elements.get(key)
+			el = el or db.find_one({"hash": key})
+			if el:
+				queue.put([key, value, el['value']])
+				return
+	
+			elements[key]={"hash": key, "value": value}
 
-	for i in xrange(2**30):
-		if not (i % 100000) and i>1:
-			print i, time()-t
-			t = time()
-			print "miss rate: ", db._bf.get_miss_rate()
-			db.insert(elements.values())
-			elements = {}
-
-		block = next(iterator)
-		key = get_lsbs_str(sha256(block).digest(), 50).encode("hex")
-		el = elements.get(key)
-		el = el or db.find_one({"hash": key})
-		if el:
-			print key, block, el['value']
-			break
-
-		elements[key]={"hash": key, "value": block}
-
+		print "from", 1+i-slice_size, "to", i, time()-t
+		t = time()
+		print "miss rate:", db._bf.get_miss_rate()
+		db.insert(elements.values())
+		elements = {}
 	
 if __name__ == "__main__":
 	baredb.drop()
-	results()
+	array = Array('c', 87500000)
+	queue = Queue()
+	procs = cpu_count()
+	pool = [Process(target=results, args=(array, queue, i, procs)) for i in range(procs)]
+	for p in pool:
+		p.daemon = True
+		p.start()
+	print queue.get()
+

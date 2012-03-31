@@ -24,6 +24,11 @@ class BitMap(object):
         else:
             self.bmap[byte_ind] = chr(ord(self.bmap[byte_ind]) ^ 1<<bit_ind)
 
+class WrappingBitMap(BitMap):
+    def __init__(self, array):
+        assert ord(array[0]) + 1 # ensure it's a char 
+        self.bmap = array
+        
 #DEFAULT HASH FUNCTIONS
 def h1(key, max_out):
     return (key.__hash__())%max_out
@@ -73,7 +78,17 @@ class BloomFilter(object):
         #return error rate (e.g., #misses / #total access)
         return self._total_misses / float(self._total_accs)
 
-def bloomify(coll_obj, coll_key, M=None):
+class WrappingBloomFilter(BloomFilter):
+    def __init__(self, array, filters=[h1,h2], keys=None):
+        self._total_accs = 0
+        self._total_misses = 0
+        self._bmap = WrappingBitMap(array)
+        self._M = len(array)*8;
+        self._filters = filters
+        if(keys):
+            self.add_keys(keys)
+
+def bloomify(coll_obj, coll_key, M=None, bf=None):
     """
     Modifies a pymongo.collection.Collection object's find() calls to access
     a bloom filter. This will reduce the number of database queries.
@@ -89,7 +104,8 @@ def bloomify(coll_obj, coll_key, M=None):
     #1. construct bloom filter
     coll_itr = coll_obj.find()
     M = 10*coll_itr.count() if not(M) else M
-    bf = BloomFilter(M)
+    if not bf:
+        bf = BloomFilter(M)
     #2. add items to bloom filter
     for doc in coll_itr:
         #determine if the document contains the key
@@ -112,19 +128,21 @@ def bloomify(coll_obj, coll_key, M=None):
     #4. construct new insert function
     orig_insert = coll_obj.insert
     def new_insert(doc_or_docs, *args, **kwargs):
-    	if isinstance(doc_or_docs, dict):
-    		try:
-    			bf.add_key(doc_or_docs[coll_key])
-    		except KeyError:
-    			pass
-    	else:
-    		bf.add_keys((doc[coll_key] for doc in doc_or_docs if coll_key in doc))
-    	orig_insert(doc_or_docs, *args, **kwargs)
+        if isinstance(doc_or_docs, dict):
+            try:
+                bf.add_key(doc_or_docs[coll_key])
+            except KeyError:
+                pass
+        else:
+            bf.add_keys((doc[coll_key] for doc in doc_or_docs if coll_key in doc))
+        orig_insert(doc_or_docs, *args, **kwargs)
     #5. re-assign find_one and insert
     coll_obj._bf = bf
     coll_obj.find_one = new_find_one
     coll_obj.insert = new_insert
     return coll_obj
 
-
+def wrapping_bloomify(coll_obj, coll_key, array):
+    bf = WrappingBloomFilter(array)
+    return bloomify(coll_obj, coll_key, len(array)*8, bf)
 
