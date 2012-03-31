@@ -6,17 +6,25 @@ from time import time
 from string import printable
 from itertools import product, chain, count
 from array import array
+from math import log
 
 from pymongo import Connection
 from bloomfilter import bloomify
 
+log2 = lambda x: log(x)/log(2)
+bits = lambda x: int(log2(x)+1)
+
 baredb = Connection().hashes.collection
 
-def get_lsbs_str(mystr):
-	chrlist = list(mystr)
-	result1 = [chr(ord(chrlist[-7])&(3))]
-	result2 = chrlist[-6:]
-	return "".join(result1 + result2).encode("base64")
+def get_lsbs_str(mystr, l=50):
+	result = []
+	chars = l / 8
+	rem = l % 8
+	if rem:
+		result += [chr(ord(mystr[-(chars + 1)]) & bits(rem))]
+	if chars:
+		result += mystr[-chars:]
+	return "".join(result)
 
 alphabet = printable[:-5]
 def get_rand_block():
@@ -34,7 +42,8 @@ def results():
 	t = time()
 	elements = {}
 	iterator = get_proc_block()
-	for i in xrange(2**33):
+
+	for i in xrange(2**30):
 		if not (i % 100000) and i>1:
 			print i, time()-t
 			t = time()
@@ -42,24 +51,16 @@ def results():
 			elements = {}
 
 		block = next(iterator)
-		key = get_lsbs_str(sha256(block).digest())
+		key = get_lsbs_str(sha256(block).digest(), 50)
 		el = elements.get(key)
 		el = el or db.find_one({"hash": key})
 		if el:
 			print key, block, el['value']
 			break
-		elements[key]={"hash": key, "value": block}
-	
-# blocks = (("%0128x" % i).decode("base64") for i in xrange(2**512))
-# 
-# def res():
-# 	d = defaultdict(lambda :[])
-# 	for block in blocks:
-# 		d[get_lsbs_str(sha256(block).digest())].append(block)
-# 
-# 	res = filter(lambda t:len(t[1])>1, d.iteritems())
-# 	return res
 
+		elements[key]={"hash": key, "value": block}
+
+	
 if __name__ == "__main__":
 	baredb.drop()
 	results()
