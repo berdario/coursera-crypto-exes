@@ -16,7 +16,7 @@ def get_lsbs_str(mystr, l=50):
 	chars = l / 8
 	rem = l % 8
 	if rem:
-		result += [chr(ord(mystr[-(chars + 1)]) & bits(rem))]
+		result += [chr(ord(mystr[-(chars + 1)]) & (pow**bits(rem))-1)]
 	if chars:
 		result += mystr[-chars:]
 	return "".join(result)
